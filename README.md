@@ -48,18 +48,12 @@ Update installation process
 
 📌 System Requirements
 Windows 10 (1709+) or Windows 11
-
 .NET Framework 4.7.2 or later
-
 Internet connection (for initial setup)
 
 🤝 Contributing
 Fork the project (git fork)
-
 Create new branch (git checkout -b feature/fooBar)
-
 Commit changes (git commit -am 'Add some fooBar')
-
 Push changes (git push origin feature/fooBar)
-
 Create Pull Request
