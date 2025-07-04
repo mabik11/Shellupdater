@@ -17,6 +17,7 @@ Feature	Description
 🛡️ Admin Support	Runs with elevated privileges
 
 🛠️ Installation
+
 -Download latest release from Releases section
 -Extract the zip file
 -Run WingetUpdater.exe
