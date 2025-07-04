@@ -20,4 +20,4 @@ Feature	Description
 
 -Download latest release from Releases section
 -Extract the zip file
--Run WingetUpdater.exe
+-Run Shellupdater.exe
