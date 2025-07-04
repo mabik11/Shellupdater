@@ -1,4 +1,5 @@
-🚀 Winget Update Manager - Windows Package Manager
+🚀 Shellupdater - Windows Package Manager
+
 📜 Description
 This application uses Microsoft's Winget package manager to:
 
