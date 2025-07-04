@@ -21,3 +21,9 @@ Feature	Description
 -Download latest release from Releases section
 -Extract the zip file
 -Run Shellupdater.exe
+
+
+# Alternatively build from source
+git clone https://github.com/mabik11/Shellupdater.git
+cd Shellupdater
+msbuild Shellupdater.sln
