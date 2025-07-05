@@ -18,9 +18,22 @@ namespace Shellupdater
             CheckWingetInstallation();
         }
 
+        private void AppendConsoleText(string text)
+        {
+            if (txtConsoleOutput.InvokeRequired)
+            {
+                txtConsoleOutput.Invoke(new Action<string>(AppendConsoleText), text);
+            }
+            else
+            {
+                txtConsoleOutput.AppendText(text + "\n");
+                txtConsoleOutput.ScrollToCaret();
+            }
+        }
+
         private void CheckWingetInstallation()
         {
-            txtConsoleOutput.AppendText("Winget kurulum durumu kontrol ediliyor...\n");
+            AppendConsoleText("Winget kurulum durumu kontrol ediliyor...");
 
             try
             {
@@ -47,14 +60,14 @@ namespace Shellupdater
                         return;
                     }
                 }
-                // Winget bulunamadı
+
                 isWingetInstalled = false;
-                txtConsoleOutput.AppendText("Winget yüklü değil.\n");
+                AppendConsoleText("Winget yüklü değil.");
                 AskToInstallWinget();
             }
             catch (Exception ex)
             {
-                txtConsoleOutput.AppendText($"Kontrol hatası: {ex.Message}\n");
+                AppendConsoleText($"Kontrol hatası: {ex.Message}");
             }
         }
 
@@ -74,7 +87,7 @@ namespace Shellupdater
                 using (var process = Process.Start(psi))
                 {
                     wingetVersion = process.StandardOutput.ReadToEnd().Trim();
-                    txtConsoleOutput.AppendText($"Winget yüklü (Sürüm: {wingetVersion})\n\n");
+                    AppendConsoleText($"Winget yüklü (Sürüm: {wingetVersion})");
                 }
             }
             catch
@@ -85,6 +98,12 @@ namespace Shellupdater
 
         private void AskToInstallWinget()
         {
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(AskToInstallWinget));
+                return;
+            }
+
             var result = MessageBox.Show("Winget yüklü değil. Şimdi yüklemek ister misiniz?",
                                       "Winget Gerekli",
                                       MessageBoxButtons.YesNo,
@@ -96,7 +115,7 @@ namespace Shellupdater
             }
             else
             {
-                txtConsoleOutput.AppendText("Winget yükleme iptal edildi. Uygulama sınırlı işlevsellikle çalışacak.\n");
+                AppendConsoleText("Winget yükleme iptal edildi. Uygulama sınırlı işlevsellikle çalışacak.");
             }
         }
 
@@ -105,7 +124,7 @@ namespace Shellupdater
             try
             {
                 SetUIState(false);
-                txtConsoleOutput.AppendText("Winget yükleniyor...\n");
+                AppendConsoleText("Winget yükleniyor...");
 
                 string downloadUrl = "https://aka.ms/getwinget";
                 string tempPath = Path.GetTempPath();
@@ -123,13 +142,13 @@ namespace Shellupdater
 
                     await client.DownloadFileTaskAsync(new Uri(downloadUrl), installerPath);
 
-                    txtConsoleOutput.AppendText("Yükleyici başarıyla indirildi. Kurulum başlıyor...\n");
+                    AppendConsoleText("Yükleyici başarıyla indirildi. Kurulum başlıyor...");
                     await InstallWingetPackage(installerPath);
                 }
             }
             catch (Exception ex)
             {
-                txtConsoleOutput.AppendText($"Yükleme hatası: {ex.Message}\n");
+                AppendConsoleText($"Yükleme hatası: {ex.Message}");
             }
             finally
             {
@@ -150,29 +169,29 @@ namespace Shellupdater
                 };
 
                 var process = Process.Start(psi);
-                txtConsoleOutput.AppendText("Kurulum başlatıldı. Lütfen bekleyin...\n");
+                AppendConsoleText("Kurulum başlatıldı. Lütfen bekleyin...");
 
                 await Task.Delay(5000);
                 CheckWingetInstallation();
             }
             catch (Exception ex)
             {
-                txtConsoleOutput.AppendText($"Kurulum hatası: {ex.Message}\n");
+                AppendConsoleText($"Kurulum hatası: {ex.Message}");
             }
         }
 
-        private async void ExecuteWingetCommand(string command)
+        private async Task ExecuteWingetCommand(string command)
         {
             if (!isWingetInstalled)
             {
-                txtConsoleOutput.AppendText("Hata: Winget yüklü değil.\n");
+                AppendConsoleText("Hata: Winget yüklü değil.");
                 return;
             }
 
             try
             {
                 SetUIState(false);
-                txtConsoleOutput.AppendText($"> winget {command}\n");
+                AppendConsoleText($"> winget {command}");
 
                 var psi = new ProcessStartInfo
                 {
@@ -191,11 +210,7 @@ namespace Shellupdater
                     {
                         if (!string.IsNullOrEmpty(e.Data))
                         {
-                            this.Invoke((MethodInvoker)delegate
-                            {
-                                txtConsoleOutput.AppendText(e.Data + "\n");
-                                txtConsoleOutput.ScrollToCaret();
-                            });
+                            AppendConsoleText(e.Data);
                         }
                     };
 
@@ -203,11 +218,7 @@ namespace Shellupdater
                     {
                         if (!string.IsNullOrEmpty(e.Data))
                         {
-                            this.Invoke((MethodInvoker)delegate
-                            {
-                                txtConsoleOutput.AppendText("HATA: " + e.Data + "\n");
-                                txtConsoleOutput.ScrollToCaret();
-                            });
+                            AppendConsoleText("HATA: " + e.Data);
                         }
                     };
 
@@ -220,7 +231,7 @@ namespace Shellupdater
             }
             catch (Exception ex)
             {
-                txtConsoleOutput.AppendText($"Komut hatası: {ex.Message}\n");
+                AppendConsoleText($"Komut hatası: {ex.Message}");
             }
             finally
             {
@@ -230,13 +241,16 @@ namespace Shellupdater
 
         private void SetUIState(bool enabled)
         {
-            this.Invoke((MethodInvoker)delegate
+            if (this.InvokeRequired)
             {
-                btnGuncellemeleriKontrolEt.Enabled = enabled;
-                btnTumunuGuncelle.Enabled = enabled;
-                btnWingetYukle.Enabled = enabled;
-                Cursor.Current = enabled ? Cursors.Default : Cursors.WaitCursor;
-            });
+                this.Invoke(new Action<bool>(SetUIState), enabled);
+                return;
+            }
+
+            btnCheckUpdates.Enabled = enabled;
+            btnInstallUpdates.Enabled = enabled;
+            btnInstallWinget.Enabled = enabled;
+            Cursor.Current = enabled ? Cursors.Default : Cursors.WaitCursor;
         }
 
         private async void btnCheckUpdates_Click(object sender, EventArgs e)
@@ -247,8 +261,8 @@ namespace Shellupdater
                 return;
             }
 
-            txtConsoleOutput.AppendText("Güncellemeler kontrol ediliyor...\n");
-            await Task.Run(() => ExecuteWingetCommand("upgrade"));
+            AppendConsoleText("Güncellemeler kontrol ediliyor...");
+            await ExecuteWingetCommand("upgrade");
         }
 
         private async void btnInstallUpdates_Click(object sender, EventArgs e)
@@ -266,8 +280,8 @@ namespace Shellupdater
 
             if (result == DialogResult.Yes)
             {
-                txtConsoleOutput.AppendText("Güncellemeler yükleniyor...\n");
-                await Task.Run(() => ExecuteWingetCommand("upgrade --all"));
+                AppendConsoleText("Güncellemeler yükleniyor...");
+                await ExecuteWingetCommand("upgrade --all");
             }
         }
 
@@ -278,10 +292,10 @@ namespace Shellupdater
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            txtConsoleOutput.AppendText("=== Winget Güncelleme Aracı ===\n");
-            txtConsoleOutput.AppendText("1. 'Winget Kontrol Et' - Winget kurulumunu doğrular\n");
-            txtConsoleOutput.AppendText("2. 'Güncellemeleri Kontrol Et' - Kullanılabilir güncellemeleri listeler\n");
-            txtConsoleOutput.AppendText("3. 'Tümünü Güncelle' - Tüm uygulamaları günceller\n\n");
+            AppendConsoleText("=== Winget Güncelleme Aracı ===");
+            AppendConsoleText("1. 'Winget Kontrol Et' - Winget kurulumunu doğrular");
+            AppendConsoleText("2. 'Güncellemeleri Kontrol Et' - Kullanılabilir güncellemeleri listeler");
+            AppendConsoleText("3. 'Tümünü Güncelle' - Tüm uygulamaları günceller");
         }
     }
 }
