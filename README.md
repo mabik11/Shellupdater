@@ -24,6 +24,6 @@ A Windows desktop application that manages application updates using Microsoft's
 
 ### Build from Source
 ```bash
-git clone https://github.com/yourusername/winget-updater.git
-cd winget-updater
-msbuild WingetUpdater.sln /p:Configuration=Release
+git clone https://github.com/mabik11/Shellupdater.git
+cd Shellupdater
+msbuild Shellupdater.sln /p:Configuration=Release
