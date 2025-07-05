@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Threading.Tasks;
 
 namespace Shellupdater
 {
@@ -22,19 +20,13 @@ namespace Shellupdater
 
         private void AppendConsoleText(string text)
         {
-            if (string.IsNullOrWhiteSpace(text)) return;
-
-            // Özel karakterleri ve gereksiz boşlukları temizle
-            string cleanedText = Regex.Replace(text, @"[^\u0000-\u007F]+", string.Empty);
-            cleanedText = Regex.Replace(cleanedText, @"\s+", " ").Trim();
-
             if (txtConsoleOutput.InvokeRequired)
             {
-                txtConsoleOutput.Invoke(new Action<string>(AppendConsoleText), cleanedText);
+                txtConsoleOutput.Invoke(new Action<string>(AppendConsoleText), text);
             }
             else
             {
-                txtConsoleOutput.AppendText(cleanedText + Environment.NewLine);
+                txtConsoleOutput.AppendText(text + "\n");
                 txtConsoleOutput.ScrollToCaret();
             }
         }
@@ -199,112 +191,6 @@ namespace Shellupdater
             try
             {
                 SetUIState(false);
-                AppendConsoleText($"> winget {command} --disable-interactivity");
-
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "cmd.exe",
-                    Arguments = $"/C winget {command} --disable-interactivity",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    CreateNoWindow = true,
-                    Verb = "runas"
-                };
-
-                using (var process = new Process { StartInfo = psi })
-                {
-                    process.OutputDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(e.Data))
-                        {
-                            ProcessWingetOutput(e.Data);
-                        }
-                    };
-
-                    process.ErrorDataReceived += (sender, e) =>
-                    {
-                        if (!string.IsNullOrWhiteSpace(e.Data))
-                        {
-                            AppendConsoleText("HATA: " + CleanOutput(e.Data));
-                        }
-                    };
-
-                    process.Start();
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
-
-                    await Task.Run(() => process.WaitForExit());
-                }
-            }
-            catch (Exception ex)
-            {
-                AppendConsoleText($"Komut hatası: {ex.Message}");
-            }
-            finally
-            {
-                SetUIState(true);
-            }
-        }
-
-        private string CleanOutput(string text)
-        {
-            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
-
-            // İlerleme çubuklarını ve özel karakterleri temizle
-            string cleaned = Regex.Replace(text, @"[^\u0000-\u007F]+", string.Empty);
-            // Çoklu boşlukları tek boşluğa indirge
-            cleaned = Regex.Replace(cleaned, @"\s+", " ").Trim();
-
-            return cleaned;
-        }
-
-        private void ProcessWingetOutput(string output)
-        {
-            string cleaned = CleanOutput(output);
-
-            // Boş satırları atla
-            if (string.IsNullOrWhiteSpace(cleaned)) return;
-
-            // Tablo başlıklarını ve önemli bilgileri yakala
-            if (cleaned.StartsWith("Name ") ||
-                cleaned.StartsWith("----") ||
-                cleaned.Contains("upgrades available") ||
-                cleaned.Contains("Version ") ||
-                cleaned.Contains("Available ") ||
-                cleaned.StartsWith("The following packages") ||
-                cleaned.StartsWith("No installed") ||
-                cleaned.StartsWith("Found ") ||
-                cleaned.StartsWith("Error") ||
-                cleaned.StartsWith("Warning") ||
-                // Uygulama güncelleme satırları (Logitech G HUB gibi)
-                Regex.IsMatch(cleaned, @"^[a-zA-Z0-9].*\d+\.\d+\.\d+\s+\d+\.\d+\.\d+"))
-            {
-                // Tablo formatını koru
-                if (cleaned.Contains("|"))
-                {
-                    string[] parts = cleaned.Split('|');
-                    string formattedLine = string.Join(" | ", parts.Select(p => p.Trim()));
-                    AppendConsoleText(formattedLine);
-                }
-                else
-                {
-                    AppendConsoleText(cleaned);
-                }
-            }
-        }
-
-        private async Task ExecuteWingetCommandInteractive(string command)
-        {
-            if (!isWingetInstalled)
-            {
-                AppendConsoleText("Hata: Winget yüklü değil.");
-                return;
-            }
-
-            try
-            {
-                SetUIState(false);
                 AppendConsoleText($"> winget {command}");
 
                 var psi = new ProcessStartInfo
@@ -322,17 +208,17 @@ namespace Shellupdater
                 {
                     process.OutputDataReceived += (sender, e) =>
                     {
-                        if (!string.IsNullOrWhiteSpace(e.Data))
+                        if (!string.IsNullOrEmpty(e.Data))
                         {
-                            ProcessWingetOutput(e.Data);
+                            AppendConsoleText(e.Data);
                         }
                     };
 
                     process.ErrorDataReceived += (sender, e) =>
                     {
-                        if (!string.IsNullOrWhiteSpace(e.Data))
+                        if (!string.IsNullOrEmpty(e.Data))
                         {
-                            AppendConsoleText("HATA: " + CleanOutput(e.Data));
+                            AppendConsoleText("HATA: " + e.Data);
                         }
                     };
 
