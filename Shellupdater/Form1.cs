@@ -281,7 +281,7 @@ namespace Shellupdater
             if (result == DialogResult.Yes)
             {
                 AppendConsoleText("Güncellemeler yükleniyor...");
-                await ExecuteWingetCommand("upgrade --all");
+                await ExecuteWingetCommand("upgrade --all --include-unknown");
             }
         }
 
