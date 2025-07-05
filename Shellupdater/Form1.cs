@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Windows.Forms;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace Shellupdater
 {
@@ -26,7 +27,8 @@ namespace Shellupdater
             }
             else
             {
-                txtConsoleOutput.AppendText(text + "\n");
+                string modifiedText = Regex.Replace(text, @"â–", ".");
+                txtConsoleOutput.AppendText(modifiedText + "\n");
                 txtConsoleOutput.ScrollToCaret();
             }
         }
