@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Windows.Forms;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Threading.Tasks;
 
 namespace Shellupdater
 {
@@ -47,7 +47,6 @@ namespace Shellupdater
                         return;
                     }
                 }
-
                 // Winget bulunamadı
                 isWingetInstalled = false;
                 txtConsoleOutput.AppendText("Winget yüklü değil.\n");
@@ -101,18 +100,17 @@ namespace Shellupdater
             }
         }
 
-        private void InstallWinget()
+        private async void InstallWinget()
         {
             try
             {
+                SetUIState(false);
                 txtConsoleOutput.AppendText("Winget yükleniyor...\n");
 
-                // GitHub'dan en son Winget release'ini indir
                 string downloadUrl = "https://aka.ms/getwinget";
                 string tempPath = Path.GetTempPath();
                 string installerPath = Path.Combine(tempPath, "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle");
 
-                // Dosyayı indir
                 using (WebClient client = new WebClient())
                 {
                     client.DownloadProgressChanged += (s, e) =>
@@ -123,32 +121,23 @@ namespace Shellupdater
                         });
                     };
 
-                    client.DownloadFileCompleted += (s, e) =>
-                    {
-                        this.Invoke((MethodInvoker)delegate
-                        {
-                            if (e.Error != null)
-                            {
-                                txtConsoleOutput.AppendText($"İndirme hatası: {e.Error.Message}\n");
-                                return;
-                            }
+                    await client.DownloadFileTaskAsync(new Uri(downloadUrl), installerPath);
 
-                            txtConsoleOutput.AppendText("Yükleyici başarıyla indirildi. Kurulum başlıyor...\n");
-                            InstallWingetPackage(installerPath);
-                        });
-                    };
-
-                    txtConsoleOutput.AppendText("Winget yükleyici indiriliyor...\n");
-                    client.DownloadFileAsync(new Uri(downloadUrl), installerPath);
+                    txtConsoleOutput.AppendText("Yükleyici başarıyla indirildi. Kurulum başlıyor...\n");
+                    await InstallWingetPackage(installerPath);
                 }
             }
             catch (Exception ex)
             {
                 txtConsoleOutput.AppendText($"Yükleme hatası: {ex.Message}\n");
             }
+            finally
+            {
+                SetUIState(true);
+            }
         }
 
-        private void InstallWingetPackage(string installerPath)
+        private async Task InstallWingetPackage(string installerPath)
         {
             try
             {
@@ -156,24 +145,15 @@ namespace Shellupdater
                 {
                     FileName = "powershell.exe",
                     Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"Add-AppxPackage -Path '{installerPath}'\"",
-                    Verb = "runas", // Yönetici olarak çalıştır
+                    Verb = "runas",
                     UseShellExecute = true
                 };
 
-                Process.Start(psi);
+                var process = Process.Start(psi);
                 txtConsoleOutput.AppendText("Kurulum başlatıldı. Lütfen bekleyin...\n");
 
-                // Kurulumun bitmesini bekle ve kontrol et
-                System.Timers.Timer timer = new System.Timers.Timer(5000);
-                timer.Elapsed += (s, e) =>
-                {
-                    timer.Stop();
-                    this.Invoke((MethodInvoker)delegate
-                    {
-                        CheckWingetInstallation();
-                    });
-                };
-                timer.Start();
+                await Task.Delay(5000);
+                CheckWingetInstallation();
             }
             catch (Exception ex)
             {
@@ -181,7 +161,7 @@ namespace Shellupdater
             }
         }
 
-        private void ExecuteWingetCommand(string command)
+        private async void ExecuteWingetCommand(string command)
         {
             if (!isWingetInstalled)
             {
@@ -189,21 +169,22 @@ namespace Shellupdater
                 return;
             }
 
-            txtConsoleOutput.AppendText($"> {command}\n");
-
-            var psi = new ProcessStartInfo
-            {
-                FileName = "winget.exe",
-                Arguments = command,
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = false,
-                Verb = "runas"
-            };
-
             try
             {
+                SetUIState(false);
+                txtConsoleOutput.AppendText($"> winget {command}\n");
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/C winget {command}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true,
+                    Verb = "runas"
+                };
+
                 using (var process = new Process { StartInfo = psi })
                 {
                     process.OutputDataReceived += (sender, e) =>
@@ -233,16 +214,32 @@ namespace Shellupdater
                     process.Start();
                     process.BeginOutputReadLine();
                     process.BeginErrorReadLine();
-                    process.WaitForExit();
+
+                    await Task.Run(() => process.WaitForExit());
                 }
             }
             catch (Exception ex)
             {
                 txtConsoleOutput.AppendText($"Komut hatası: {ex.Message}\n");
             }
+            finally
+            {
+                SetUIState(true);
+            }
         }
 
-        private void btnCheckUpdates_Click(object sender, EventArgs e)
+        private void SetUIState(bool enabled)
+        {
+            this.Invoke((MethodInvoker)delegate
+            {
+                btnGuncellemeleriKontrolEt.Enabled = enabled;
+                btnTumunuGuncelle.Enabled = enabled;
+                btnWingetYukle.Enabled = enabled;
+                Cursor.Current = enabled ? Cursors.Default : Cursors.WaitCursor;
+            });
+        }
+
+        private async void btnCheckUpdates_Click(object sender, EventArgs e)
         {
             if (!isWingetInstalled)
             {
@@ -251,10 +248,10 @@ namespace Shellupdater
             }
 
             txtConsoleOutput.AppendText("Güncellemeler kontrol ediliyor...\n");
-            ExecuteWingetCommand("upgrade");
+            await Task.Run(() => ExecuteWingetCommand("upgrade"));
         }
 
-        private void btnInstallUpdates_Click(object sender, EventArgs e)
+        private async void btnInstallUpdates_Click(object sender, EventArgs e)
         {
             if (!isWingetInstalled)
             {
@@ -270,7 +267,7 @@ namespace Shellupdater
             if (result == DialogResult.Yes)
             {
                 txtConsoleOutput.AppendText("Güncellemeler yükleniyor...\n");
-                ExecuteWingetCommand("upgrade --all");
+                await Task.Run(() => ExecuteWingetCommand("upgrade --all"));
             }
         }
 

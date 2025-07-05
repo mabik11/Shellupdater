@@ -1,59 +1,29 @@
-🚀 Shellupdater - Windows Package Manager
+# 🚀 Shellupdater 
 
-📜 Description
-This application uses Microsoft's Winget package manager to:
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white) 
+![.NET](https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)
 
-Automatically update installed applications
+A Windows desktop application that manages application updates using Microsoft's Winget package manager.
 
-Install Winget automatically if not present
+![Application Screenshot](https://github.com/mabik11/Shellupdater/blob/master/Shellupdater/Sscreen/2025-07-05_02-07-44.png?raw=true)
 
-Work without Microsoft Store dependency
+## ✨ Features
 
-✨ Features
-Feature	Description
-🔍 Automatic Winget Check	Verifies Winget installation
-⚡ One-Click Updates	Updates all applications with single button
-📦 Standalone Installation	Installs Winget without Microsoft Store
-📊 Real-Time Output	Shows all operations live
-🛡️ Admin Support	Runs with elevated privileges
+- ✅ **Automatic Winget installation** if not detected
+- ⚡ **One-click bulk updates** for all installed apps
+- 📦 **Store-independent operation** - no Microsoft Store required
+- 📊 **Real-time console output** with status messages
+- 🛡️ **Automatic admin elevation** when needed
 
-🛠️ Installation
+## 📥 Installation
 
--Download latest release from Releases section
--Extract the zip file
--Run Shellupdater.exe
+### Pre-built Release
+1. Download latest version from [Releases](https://github.com/mabik11/Shellupdater/releases)
+2. Extract `WingetUpdater.zip`
+3. Run `WingetUpdater.exe`
 
-
-# Alternatively build from source
-git clone https://github.com/mabik11/Shellupdater.git
-cd Shellupdater
-msbuild Shellupdater.sln
-
-
-📋 Usage
-Launch the application
-
-Click "Check for Updates"
-
-View available updates
-
-Click "Update All" to install updates
-
-🌟 Screenshots
-
-Update check interface
-
-
-Update installation process
-
-📌 System Requirements
-Windows 10 (1709+) or Windows 11
-.NET Framework 4.7.2 or later
-Internet connection (for initial setup)
-
-🤝 Contributing
-Fork the project (git fork)
-Create new branch (git checkout -b feature/fooBar)
-Commit changes (git commit -am 'Add some fooBar')
-Push changes (git push origin feature/fooBar)
-Create Pull Request
+### Build from Source
+```bash
+git clone https://github.com/yourusername/winget-updater.git
+cd winget-updater
+msbuild WingetUpdater.sln /p:Configuration=Release
