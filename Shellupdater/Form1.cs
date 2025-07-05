@@ -2,8 +2,9 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Windows.Forms;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Shellupdater
 {
@@ -20,13 +21,19 @@ namespace Shellupdater
 
         private void AppendConsoleText(string text)
         {
+            if (string.IsNullOrWhiteSpace(text)) return;
+
+            // Özel karakterleri ve gereksiz boşlukları temizle
+            string cleanedText = Regex.Replace(text, @"[^\u0000-\u007F]+", string.Empty);
+            cleanedText = Regex.Replace(cleanedText, @"\s+", " ").Trim();
+
             if (txtConsoleOutput.InvokeRequired)
             {
-                txtConsoleOutput.Invoke(new Action<string>(AppendConsoleText), text);
+                txtConsoleOutput.Invoke(new Action<string>(AppendConsoleText), cleanedText);
             }
             else
             {
-                txtConsoleOutput.AppendText(text + "\n");
+                txtConsoleOutput.AppendText(cleanedText + Environment.NewLine);
                 txtConsoleOutput.ScrollToCaret();
             }
         }
@@ -191,12 +198,12 @@ namespace Shellupdater
             try
             {
                 SetUIState(false);
-                AppendConsoleText($"> winget {command}");
+                AppendConsoleText($"> winget {command} --disable-interactivity");
 
                 var psi = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
-                    Arguments = $"/C winget {command}",
+                    Arguments = $"/C winget {command} --disable-interactivity",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -208,17 +215,17 @@ namespace Shellupdater
                 {
                     process.OutputDataReceived += (sender, e) =>
                     {
-                        if (!string.IsNullOrEmpty(e.Data))
+                        if (!string.IsNullOrWhiteSpace(e.Data))
                         {
-                            AppendConsoleText(e.Data);
+                            ProcessWingetOutput(e.Data);
                         }
                     };
 
                     process.ErrorDataReceived += (sender, e) =>
                     {
-                        if (!string.IsNullOrEmpty(e.Data))
+                        if (!string.IsNullOrWhiteSpace(e.Data))
                         {
-                            AppendConsoleText("HATA: " + e.Data);
+                            AppendConsoleText("HATA: " + CleanOutput(e.Data));
                         }
                     };
 
@@ -239,6 +246,32 @@ namespace Shellupdater
             }
         }
 
+        private string CleanOutput(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+            string cleaned = Regex.Replace(text, @"[^\u0000-\u007F]+", string.Empty);
+            return Regex.Replace(cleaned, @"\s+", " ").Trim();
+        }
+
+        private void ProcessWingetOutput(string output)
+        {
+            string cleaned = CleanOutput(output);
+
+            // Önemli bilgileri göster
+            if (cleaned.StartsWith("Name") || cleaned.StartsWith("----") ||
+                cleaned.Contains("upgrades available") ||
+                cleaned.Contains("Version") ||
+                cleaned.Contains("Available") ||
+                cleaned.StartsWith("The following packages") ||
+                cleaned.StartsWith("No installed") ||
+                cleaned.StartsWith("Found") ||
+                cleaned.StartsWith("Error") ||
+                cleaned.StartsWith("Warning"))
+            {
+                AppendConsoleText(cleaned);
+            }
+        }
+
         private void SetUIState(bool enabled)
         {
             if (this.InvokeRequired)
@@ -247,9 +280,9 @@ namespace Shellupdater
                 return;
             }
 
-            btnGuncellemeleriKontrolEt.Enabled = enabled;
-            btnTumunuGuncelle.Enabled = enabled;
-            btnWingetYukle.Enabled = enabled;
+            btnCheckUpdates.Enabled = enabled;
+            btnInstallUpdates.Enabled = enabled;
+            btnInstallWinget.Enabled = enabled;
             Cursor.Current = enabled ? Cursors.Default : Cursors.WaitCursor;
         }
 
