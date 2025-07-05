@@ -5,7 +5,7 @@
 
 A Windows desktop application that manages application updates using Microsoft's Winget package manager.
 
-![Application Screenshot](https://github.com/mabik11/Shellupdater/blob/master/Shellupdater/Sscreen/2025-07-05_02-07-44.png?raw=true)
+![Application Screenshot](https://github.com/mabik11/Shellupdater/blob/master/Shellupdater/Assets/Screenshots/App-screenshot.png?raw=true)
 
 ## ✨ Features
 
