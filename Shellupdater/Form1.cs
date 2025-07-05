@@ -280,9 +280,9 @@ namespace Shellupdater
                 return;
             }
 
-            btnCheckUpdates.Enabled = enabled;
-            btnInstallUpdates.Enabled = enabled;
-            btnInstallWinget.Enabled = enabled;
+            btnGuncellemeleriKontrolEt.Enabled = enabled;
+            btnTumunuGuncelle.Enabled = enabled;
+            btnWingetYukle.Enabled = enabled;
             Cursor.Current = enabled ? Cursors.Default : Cursors.WaitCursor;
         }
 
